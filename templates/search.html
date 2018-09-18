@@ -1,0 +1,117 @@
+{% extends "layout.html" %}
+{% block body %}
+    <section class="section">
+        <div class="container is-desktop">
+
+            {% if message %}
+                <div>{{ message }}</div>
+            {% endif %}
+            {% if results %}
+                <table class="table is-striped is-fullwidth">
+                    <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Authors</th>
+                        <th>Year</th>
+                        <th>ISBN</th>
+                    </tr>
+                    </thead>
+                    {% for book in results %}
+                        <tr>
+                            <td><a href="{{ url_for('book', book_id=book.id) }}" title="{{ book.title }}">{{ book.title }}</a></td>
+                            <td>{{ book.authors }}</td>
+                            <td>{{ book.year }}</td>
+                            <td>{{ book.isbn }}</td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            {% else %}
+                No results.
+            {% endif %}
+            {% if pages > 1 %}
+                <nav class="pagination is-centered">
+                    <a class="pagination-previous" {% if page==1 %}disabled
+                       {% else %}href="{{ url_for('search', q=query, page=page - 1) }} "{% endif %}>Previous</a>
+                    <a class="pagination-next" {% if page==pages %}disabled
+                       {% else %}href="{{ url_for('search', q=query, page=page + 1) }} "{% endif %}>Next page</a>
+                </nav>
+            {% endif %}
+        </div>
+    </section>
+    <script>
+
+        function makePaginationButton(number, current) {
+            let li = document.createElement('li'),
+                el = document.createElement('a');
+            el.innerText = number;
+            el.classList.add('pagination-link');
+            el.setAttribute('href', '{{ url_for('search', q=query) }}&page=' + number);
+            if (current) el.classList.add('is-current');
+            li.appendChild(el)
+            return li;
+        }
+
+        function makePaginationEllipsis() {
+            let li = document.createElement('li'),
+                el = document.createElement('span');
+            el.innerHTML = "&hellip;";
+            el.classList.add('pagination-ellipsis');
+            li.appendChild(el);
+            return li;
+
+        }
+
+        (function () {
+            let pages = {{ pages }};
+            let page = {{ page }};
+            let pagination = document.getElementsByClassName('pagination')[0];
+            let pag_list = document.createElement('ul');
+            pag_list.classList.add('pagination-list');
+            if (pages <= 5) {
+                for (let i = 1; i <= pages; i++) {
+                    pag_list.appendChild(makePaginationButton(i, page === i));
+                }
+            }
+            else {
+                if (page < 4) {
+                    let elements = []
+                    elements[0] = makePaginationButton(1, page === 1);
+                    elements[1] = makePaginationButton(2, page === 2);
+                    elements[2] = makePaginationButton(3, page === 3);
+                    elements[3] = makePaginationButton(4, false);
+                    elements[4] = makePaginationEllipsis();
+                    elements[5] = makePaginationButton(pages, false);
+                    for (let i = 0; i < 6; i++) {
+                        pag_list.appendChild(elements[i]);
+                    }
+                }
+                else if (page + 3 > pages) {
+                    let elements = []
+                    elements[0] = makePaginationButton(1, false);
+                    elements[1] = makePaginationEllipsis();
+                    elements[2] = makePaginationButton(pages - 3, false);
+                    elements[3] = makePaginationButton(pages - 2, page === pages - 2);
+                    elements[4] = makePaginationButton(pages - 1, page === pages - 1);
+                    elements[5] = makePaginationButton(pages, page === pages);
+                    for (let i = 0; i < 6; i++) {
+                        pag_list.appendChild(elements[i]);
+                    }
+                }
+                else {
+                    let elements = [];
+                    elements[0] = makePaginationButton(1, false);
+                    elements[1] = makePaginationEllipsis();
+                    elements[2] = makePaginationButton(page - 1, false);
+                    elements[3] = makePaginationButton(page, true);
+                    elements[4] = makePaginationButton(page + 1, false);
+                    elements[5] = makePaginationEllipsis();
+                    elements[6] = makePaginationButton(pages, false);
+                    for (let i = 0; i < 7; i++) {
+                        pag_list.appendChild(elements[i]);
+                    }
+                }
+            }
+            pagination.appendChild(pag_list);
+        })();
+    </script>
+{% endblock %}

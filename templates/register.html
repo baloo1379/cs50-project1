@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+{% block body %}
+    <section class="section">
+        <div class="container is-desktop">
+            <div class="columns is-centered">
+                <div class="column is-half">
+                    <div class="box">
+                        <form action="/register" method="post" class="field">
+                            <div class="field">
+                                <label class="label">Username</label>
+                                <div class="control">
+                                    <input class="input" type="text" placeholder="e.g edX2018" name="username">
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="label">Password</label>
+                                <div class="control">
+                                    <input class="input" type="password" placeholder="need to be save" name="pass">
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label class="label">Re-enter password</label>
+                                <div class="control">
+                                    <input class="input" type="password" placeholder="need to be same like in upper field"
+                                           name="pass2">
+                                </div>
+                            </div>
+
+                            <div class="field is-grouped">
+                                <div class="control">
+                                    <button class="button is-primary">Submit</button>
+                                </div>
+                                <div class="control">
+                                    <a href="{{ url_for('index') }}" class="button">Home</a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "layout.html" %}
+{% block body %}
+    <section class="hero">
+        <div class="hero-body">
+            <h1 class="title">
+                Search books in our database
+            </h1>
+            <p class="subtitle">
+                Type title, author or ISBN number
+            </p>
+        </div>
+    </section>
+    <section class="section">
+        <div class="content columns is-centered">
+            <div class="column is-half">
+                <div class="box">
+                    <form class="field has-addons" method="GET" action="/search">
+                        <div class="control is-expanded">
+                            <input id="search_input" name="q" class="input" type="text" placeholder="Find a book"
+                                   list="ac">
+                            <datalist id="ac">
+                            </datalist>
+                        </div>
+                        <div class="control">
+                            <button id="search_button" class="button is-info">Search</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+    <script>
+        // Credit David Walsh (https://davidwalsh.name/javascript-debounce-function)
+
+        // Returns a function, that, as long as it continues to be invoked, will not
+        // be triggered. The function will be called after it stops being called for
+        // N milliseconds. If `immediate` is passed, trigger the function on the
+        // leading edge, instead of the trailing.
+        function debounce(func, wait, immediate) {
+            let timeout;
+            return () => {
+                let context = this;
+                let args = arguments;
+
+                let later = () => {
+                    timeout = null;
+                    if (!immediate) func.apply(context, args);
+                };
+
+                let callNow = immediate && !timeout;
+
+                clearTimeout(timeout);
+
+                timeout = setTimeout(later, wait);
+
+                if (callNow) func.apply(context, args);
+            };
+        }
+
+        function autocomplete(input, list) {
+            while (list.firstChild) {
+                list.removeChild(list.firstChild);
+            }
+            let text = input.value;
+            if (text === "" || text.length < 3) return;
+            let address = new Request("http://localhost:5000/autocomplete/" + text);
+
+            fetch(address)
+                .then(resp => {
+                    if (resp.ok) {
+                        return resp.json();
+                    } else throw new Error("Błąd połączenia");
+                })
+                .then(resp => {
+                    resp.forEach(item => {
+                        let title = item[0].length > 48 ? item[0].substring(0, 48) + "..." : item[0];
+                        let authors = item[1].length > 32 ? item[1].substring(0, 32) + "..." : item[1];
+                        let year = item[2];
+                        let option = document.createElement('option');
+                        option.value = title;
+                        option.innerHTML = authors + ", " + year;
+                        list.appendChild(option)
+                    });
+                })
+                .catch(error => {
+                    console.error("Błąd: ", error);
+                });
+        }
+
+        (function () {
+            let input = document.getElementById("search_input"),
+                //button = document.getElementById("search_button"),
+                list = document.getElementById('ac');
+
+            var debInput = debounce(() => {
+                console.log("calling autocomplete", input.value)
+                autocomplete(input, list);
+            }, 500, false);
+
+            input.addEventListener('keyup', debInput, false);
+        })();
+    </script>
+{% endblock %}

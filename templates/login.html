@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+{% block body %}
+    <section class="section">
+        <div class="container is-desktop">
+            <div class="columns">
+                <div class="column is-half hero">
+                    <div class="hero-body">
+                        <h1 class="title">Don't you have an account?</h1>
+                        <p class="subtitle">Register now!</p>
+                        <a href="{{ url_for('register') }}" class="button">Register</a>
+                    </div>
+                </div>
+                <div class="column is-half">
+                    <div class="box">
+                        <form action="/login" method="post" class="field">
+                            <div class="field">
+                                <label class="label">Username</label>
+                                <div class="control">
+                                    <input class="input" type="text" placeholder="e.g edX2018" name="username">
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="label">Password</label>
+                                <div class="control">
+                                    <input class="input" type="password" placeholder="e.g. ******" name="password">
+                                </div>
+                            </div>
+                            <div class="field">
+                                <div class="control">
+                                    <button class="button is-primary">Submit</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

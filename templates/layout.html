@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Books</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.min.css">
+</head>
+<body>
+<nav class="navbar">
+    <div class="navbar-brand">
+        <a class="navbar-item" href="#">
+            <img src="https://bulma.io/images/bulma-logo.png" alt="Bulma: a modern CSS framework based on Flexbox"
+                 width="112" height="28">
+        </a>
+        <div class="navbar-burger burger" data-target="navbarExampleTransparentExample">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+
+    <div id="navbarExampleTransparentExample" class="navbar-menu">
+        <div class="navbar-start">
+            <a class="navbar-item" href="{{ url_for('index') }}">
+                Home
+            </a>
+
+        </div>
+
+        <div class="navbar-end">
+            <div class="navbar-item">
+                <div class="field is-grouped">
+                    {% if session.get('logged_in') %}
+                        <p class="control">
+                            <a class="button is-primary" href="{{ url_for('logout') }}">
+                                <span>Logout</span>
+                            </a>
+                        </p>
+                    {% else %}
+                        <p class="control">
+                            <a class="button is-primary" href="{{ url_for('login') }}">
+                                <span>Login</span>
+                            </a>
+                        </p>
+                        <p class="control">
+                            <a class="button is-primary" href="{{ url_for('register') }}">
+                                <span>Register</span>
+                            </a>
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <div class="notification">
+            <button class="delete"></button>
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+{% block body %}
+{% endblock %}
+<script>
+    (function () {
+        let not = document.getElementsByClassName('notification')[0];
+        let notDel = document.getElementsByClassName('delete');
+        if (notDel.length > 0) {
+            notDel[0].addEventListener('click', () => {
+                not.remove();
+            }, false)
+        }
+    })();
+    (function () {
+        const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+
+        if ($navbarBurgers.length > 0) {
+            // Add a click event on each of them
+            $navbarBurgers.forEach(el => {
+                el.addEventListener('click', () => {
+
+                    // Get the target from the "data-target" attribute
+                    const target = el.dataset.target;
+                    const $target = document.getElementById(target);
+
+                    // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
+                    el.classList.toggle('is-active');
+                    $target.classList.toggle('is-active');
+
+                });
+            });
+        }
+    })();
+</script>
+</body>
+</html>
