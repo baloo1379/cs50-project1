@@ -188,8 +188,8 @@ def review():
         review = request.form.get("review")
         rating = float(request.form.get("rating"))
         db.execute(
-            "INSERT INTO `reviews` (`id`, `book_id`, `user_id`, `date`, `time`, `review`) VALUES (NULL, :book_id, :user_id, CURRENT_DATE(), CURRENT_TIME(), :review)",
-            {"book_id": book_id, "user_id": user_id, "review": review})
+            "INSERT INTO `reviews` (`id`, `book_id`, `user_id`, `date`, `time`, `review`, `rating`) VALUES (NULL, :book_id, :user_id, CURRENT_DATE(), CURRENT_TIME(), :review, :rating)",
+            {"book_id": book_id, "user_id": user_id, "review": review, "rating": rating})
         db.commit()
         return redirect(url_for('book', book_id=book_id), "303")
 
