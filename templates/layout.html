@@ -28,6 +28,11 @@
         </div>
 
         <div class="navbar-end">
+            {% if username %}
+                <div class="navbar-item">
+                    {{ username }}
+                </div>
+            {% endif %}
             <div class="navbar-item">
                 <div class="field is-grouped">
                     {% if session.get('logged_in') %}
@@ -50,6 +55,7 @@
                     {% endif %}
                 </div>
             </div>
+
         </div>
     </div>
 </nav>

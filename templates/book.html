@@ -1,4 +1,77 @@
 {% extends "layout.html" %}
 {% block body %}
-{{ id }}
+    <section class="section">
+        <div class="container">
+            <div class="box">
+                <h1 class="title">{{ book.title }}</h1>
+                <h2 class="subtitle">{{ book.authors }}</h2>
+                <p>published: {{ book.year }}</p>
+                <p>isbn: {{ book.isbn }}</p>
+            </div>
+            <div class="box">
+                {% for review in reviews %}
+                    <article class="media">
+                        <figure class="media-left">
+                            <p class="image is-64x64">
+                                <img src="https://bulma.io/images/placeholders/128x128.png">
+                            </p>
+                        </figure>
+                        <div class="media-content">
+                            <div class="content">
+                                <p>
+                                    <strong>{{ review.username }}</strong>
+                                    <br>
+                                    {{ review.review }}
+                                    <br>
+                                    <small>{{ review.date }} - {{ review.time }}</small>
+                                </p>
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
+                {% if allowed %}
+                    <article class="media">
+                        <figure class="media-left">
+                            <p class="image is-64x64">
+                                <img src="https://bulma.io/images/placeholders/128x128.png">
+                            </p>
+                        </figure>
+                        <form class="media-content" method="post" action="{{ url_for('review') }}">
+                            <div class="field">
+                                <p class="control">
+                                    <textarea class="textarea" name="review" placeholder="Add a comment..."></textarea>
+                                </p>
+                            </div>
+                            <input type="hidden" value="{{ id }}" name="book_id">
+                            <div class="field">
+                                <p class="control">
+                                    <button class="button">Post comment</button>
+                                </p>
+                            </div>
+                        </form>
+                    </article>
+                {% else %}
+                    <article class="media">
+                        <figure class="media-left">
+                            <p class="image is-64x64">
+                                <img src="https://bulma.io/images/placeholders/128x128.png">
+                            </p>
+                        </figure>
+                        <div class="media-content">
+                            <div class="field">
+                                <p class="control">
+                                    <textarea class="textarea" placeholder="Add a comment..." disabled></textarea>
+                                </p>
+                            </div>
+                            <div class="field">
+                                <p class="control">
+                                    <button class="button" disabled>Post comment</button>
+                                </p>
+                            </div>
+                        </div>
+                    </article>
+                {% endif %}
+            </div>
+        </div>
+    </section>
 {% endblock %}

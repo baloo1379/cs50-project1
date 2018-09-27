@@ -36,11 +36,10 @@ class Book:
 
 @app.route('/')
 def index():
-    # return render_template("index.html")
     if not session.get("logged_in"):
         return render_template("welcome.html")
     else:
-        return render_template("index.html")
+        return render_template("index.html", username=session["user_name"])
 
 
 @app.route('/register', methods=['POST', 'GET'])
@@ -60,7 +59,7 @@ def register():
             flash("Password don't match")
             return redirect(url_for('register'), "303")
 
-        hash = pbkdf2_sha256.encrypt(pass1, rounds=200000, salt_size=16)
+        hash = pbkdf2_sha256.hash(pass1)
         db.execute("INSERT INTO users (username, password) VALUES (:name, :hash)",
                    {"name": username, "hash": hash})
         db.commit()
@@ -80,15 +79,19 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password")
 
-        db_hash = db.execute("SELECT password FROM users WHERE username LIKE :name", {"name": username}).fetchone()
+        res = db.execute("SELECT id, password FROM users WHERE username LIKE :name", {"name": username}).fetchone()
+        db_hash = res.password
+        user_id = res.id
 
-        if not db_hash:
+        if not res:
             flash("User not found")
             return redirect(url_for('login'), "303")
 
-        db_hash = db_hash[0].encode("utf-8")
+        # db_hash = db_hash[0].encode("utf-8")
         if pbkdf2_sha256.verify(password, db_hash):
             session["logged_in"] = True
+            session["user_id"] = user_id
+            session["user_name"] = username
             flash("Logged in successful")
             return redirect(url_for('index'), "303")
         else:
@@ -99,6 +102,7 @@ def login():
 @app.route('/logout')
 def logout():
     session["logged_in"] = False
+    session["user_id"] = None
     flash("Logout successful")
     return redirect("http://127.0.0.1:5000")
 
@@ -119,7 +123,7 @@ def search():
             pages_res = db.execute(
                 "SELECT id FROM books WHERE LOWER(title) LIKE :title OR LOWER(authors) LIKE :authors OR year LIKE :year ORDER BY id",
                 {"title": text, "authors": text, "year": text}).fetchall()
-            pages = math.ceil(len(pages_res)/10)
+            pages = math.ceil(len(pages_res) / 10)
 
             if page is None or int(page) <= 0:
                 off = int(0)
@@ -136,7 +140,7 @@ def search():
                 new_book.trim_authors()
                 books.append(new_book)
 
-            return render_template("search.html", results=books, page=int(page), query=query, pages=int(pages))
+            return render_template("search.html", results=books, page=int(page), query=query, pages=int(pages), username=session["user_name"])
 
     elif request.method == "POST":
         return redirect(url_for('index'), 303)
@@ -145,7 +149,6 @@ def search():
 @app.route('/autocomplete/<string:text>')
 def autocomplete(text):
     text = f"%{text}%".lower()
-    # query = f"SELECT * FROM books WHERE LOWER(title) LIKE {text} OR LOWER(authors) LIKE {text} OR year LIKE {text} LIMIT 10"
     result = db.execute(
         "SELECT * FROM books WHERE LOWER(title) LIKE :text OR LOWER(authors) LIKE :text OR year LIKE :text ORDER BY id LIMIT 10",
         {"text": text}).fetchall()
@@ -162,8 +165,32 @@ def book(book_id):
         return redirect(url_for('index'), "303")
     else:
         res = db.execute("SELECT * FROM books WHERE id LIKE :id", {"id": book_id}).fetchone()
+        reviews = db.execute(
+            "SELECT reviews.review, users.username, reviews.date, reviews.time, reviews.user_id FROM reviews LEFT JOIN users ON reviews.user_id = users.id WHERE reviews.book_id LIKE :id",
+            {"id": book_id}).fetchall()
         book = Book(res.id, res.title, res.authors, res.year, res.isbn)
-    return render_template('book.html', id=book_id, book=book)
+        allowed = True
+        for rev in reviews:
+            if rev.user_id == session["user_id"]:
+                allowed = False
+
+        return render_template('book.html', id=book_id, book=book, reviews=reviews, allowed=allowed, username=session["user_name"])
+
+
+@app.route('/review', methods=["POST"])
+def review():
+    if not session.get("logged_in"):
+        flash("You are not logged in")
+        return redirect(url_for('index'), "303")
+    else:
+        user_id = int(session["user_id"])
+        book_id = int(request.form.get("book_id"))
+        review = request.form.get("review")
+        db.execute(
+            "INSERT INTO `reviews` (`id`, `book_id`, `user_id`, `date`, `time`, `review`) VALUES (NULL, :book_id, :user_id, CURRENT_DATE(), CURRENT_TIME(), :review)",
+            {"book_id": book_id, "user_id": user_id, "review": review})
+        db.commit()
+        return redirect(url_for('book', book_id=book_id), "303")
 
 
 if __name__ == '__main__':
