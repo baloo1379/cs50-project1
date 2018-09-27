@@ -166,7 +166,7 @@ def book(book_id):
     else:
         res = db.execute("SELECT * FROM books WHERE id LIKE :id", {"id": book_id}).fetchone()
         reviews = db.execute(
-            "SELECT reviews.review, users.username, reviews.date, reviews.time, reviews.user_id FROM reviews LEFT JOIN users ON reviews.user_id = users.id WHERE reviews.book_id LIKE :id",
+            "SELECT reviews.review, users.username, reviews.date, reviews.time, reviews.user_id, reviews.rating FROM reviews LEFT JOIN users ON reviews.user_id = users.id WHERE reviews.book_id LIKE :id",
             {"id": book_id}).fetchall()
         book = Book(res.id, res.title, res.authors, res.year, res.isbn)
         allowed = True
@@ -186,6 +186,7 @@ def review():
         user_id = int(session["user_id"])
         book_id = int(request.form.get("book_id"))
         review = request.form.get("review")
+        rating = float(request.form.get("rating"))
         db.execute(
             "INSERT INTO `reviews` (`id`, `book_id`, `user_id`, `date`, `time`, `review`) VALUES (NULL, :book_id, :user_id, CURRENT_DATE(), CURRENT_TIME(), :review)",
             {"book_id": book_id, "user_id": user_id, "review": review})
