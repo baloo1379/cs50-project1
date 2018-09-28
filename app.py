@@ -5,6 +5,8 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from passlib.hash import pbkdf2_sha256
 from flask_cors import CORS
 import math
+import requests
+import goodreads
 
 app = Flask(__name__)
 
@@ -18,12 +20,18 @@ CORS(app)
 
 
 class Book:
-    def __init__(self, id, title, authors, year, isbn):
-        self.id = id
-        self.title = title
+    def __init__(self, b_id, g_id, isbn, isbn13, authors, year, title, rating, ratings_count, url, small_url):
+        self.id = b_id
+        self.g_id = g_id
+        self.isbn = isbn
+        self.isbn13 = int(float(isbn13))
         self.authors = authors
         self.year = year
-        self.isbn = isbn
+        self.title = title
+        self.rating = rating
+        self.ratings_count = ratings_count
+        self.url = url
+        self.small_url = small_url
 
     def trim_authors(self):
         authors_len = len(self.authors)
@@ -32,6 +40,18 @@ class Book:
         self.authors = ", ".join(self.authors)
         if authors_len > 2:
             self.authors = self.authors + " and more"
+
+
+class Review:
+
+    def __init__(self, r_id, b_id, u_id, date, time, review, rating):
+        self.id = r_id
+        self.b_id = b_id
+        self.u_id = u_id
+        self.date = date
+        self.time = time
+        self.review = review
+        self.rating = rating
 
 
 @app.route('/')
@@ -121,7 +141,7 @@ def search():
             text = f"%{query}%".lower()
             # finding how many pages prepare
             pages_res = db.execute(
-                "SELECT id FROM books WHERE LOWER(title) LIKE :title OR LOWER(authors) LIKE :authors OR year LIKE :year ORDER BY id",
+                "SELECT id FROM books WHERE LOWER(original_title) LIKE :title OR LOWER(authors) LIKE :authors OR original_publication_year LIKE :year ORDER BY id",
                 {"title": text, "authors": text, "year": text}).fetchall()
             pages = math.ceil(len(pages_res) / 10)
 
@@ -132,11 +152,11 @@ def search():
                 off = 10 * (int(page) - 1)
 
             res = db.execute(
-                "SELECT * FROM books WHERE LOWER(title) LIKE :title OR LOWER(authors) LIKE :authors OR year LIKE :year ORDER BY id LIMIT 10 OFFSET :offset",
+                "SELECT * FROM books WHERE LOWER(original_title) LIKE :title OR LOWER(authors) LIKE :authors OR original_publication_year LIKE :year ORDER BY id LIMIT 10 OFFSET :offset",
                 {"title": text, "authors": text, "year": text, "offset": off}).fetchall()
             books = []
-            for book in res:
-                new_book = Book(book.id, book.title, book.authors.split(', '), book.year, book.isbn)
+            for b_id, g_id, isbn, isbn13, authors, year, title, rating, r_count, image_url, small_image_url in res:
+                new_book = Book(b_id, g_id, isbn, isbn13, authors.split(', '), year, title, rating, r_count, image_url, small_image_url)
                 new_book.trim_authors()
                 books.append(new_book)
 
@@ -150,11 +170,11 @@ def search():
 def autocomplete(text):
     text = f"%{text}%".lower()
     result = db.execute(
-        "SELECT * FROM books WHERE LOWER(title) LIKE :text OR LOWER(authors) LIKE :text OR year LIKE :text ORDER BY id LIMIT 10",
+        "SELECT * FROM books WHERE LOWER(books.original_title) LIKE :text OR LOWER(books.authors) LIKE :text OR books.original_publication_year LIKE :text ORDER BY id LIMIT 10",
         {"text": text}).fetchall()
     response = []
     for row in result:
-        response.append([row.title, row.authors, row.year])
+        response.append([row.original_title, row.authors, row.original_publication_year])
     return jsonify(response)
 
 
@@ -168,13 +188,35 @@ def book(book_id):
         reviews = db.execute(
             "SELECT reviews.review, users.username, reviews.date, reviews.time, reviews.user_id, reviews.rating FROM reviews LEFT JOIN users ON reviews.user_id = users.id WHERE reviews.book_id LIKE :id",
             {"id": book_id}).fetchall()
-        book = Book(res.id, res.title, res.authors, res.year, res.isbn)
+
+        b_id, g_id, isbn, isbn13, authors, year, title, rating, r_count, image_url, small_image_url = res
+        current_book = Book(b_id, g_id, isbn, isbn13, authors, year, title, rating, r_count, image_url, small_image_url)
+
+        res = requests.get("https://www.goodreads.com/book/review_counts.json",
+                           params={"key": goodreads.key(), "isbns": current_book.isbn13})
+        # print(int(float(current_book.isbn13)), res)
+        if res.status_code == 200:
+            rating_available = True
+            data = res.json()
+            current_book.rating = float(data['books'][0]['average_rating'])
+            # data = res.json()
+            # current_book.rating = data.books.average_rating
+        else:
+            res = requests.get("https://www.goodreads.com/book/review_counts.json",
+                               params={"key": goodreads.key(), "isbns": current_book.isbn})
+            if res.status_code == 200:
+                rating_available = True
+                data = res.json()
+                current_book.rating = float(data['books'][0]['average_rating'])
+            else:
+                rating_available = False
+
         allowed = True
         for rev in reviews:
             if rev.user_id == session["user_id"]:
                 allowed = False
 
-        return render_template('book.html', id=book_id, book=book, reviews=reviews, allowed=allowed, username=session["user_name"])
+        return render_template('book.html', id=book_id, book=current_book, reviews=reviews, allowed=allowed, username=session["user_name"], ra=rating_available)
 
 
 @app.route('/review', methods=["POST"])
