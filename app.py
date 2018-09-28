@@ -238,6 +238,14 @@ def review():
 def isbn(q_isbn):
     q_isbn = f"%{q_isbn}%".lower()
     res = db.execute("SELECT * FROM books WHERE isbn LIKE :isbn LIMIT 1", {"isbn": q_isbn}).fetchone()
+    if res is None:
+        return jsonify(
+            {
+                "error_code": 404,
+                "error_message": "Not Found"
+            }
+        ), 404
+
     b_id, g_id, isbn, isbn13, authors, year, title, rating, r_count, image_url, small_image_url = res
     book = Book(b_id, g_id, isbn, isbn13, authors, year, title, rating, r_count, image_url, small_image_url)
     result = {
