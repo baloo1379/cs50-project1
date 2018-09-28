@@ -199,8 +199,6 @@ def book(book_id):
             rating_available = True
             data = res.json()
             current_book.rating = float(data['books'][0]['average_rating'])
-            # data = res.json()
-            # current_book.rating = data.books.average_rating
         else:
             res = requests.get("https://www.goodreads.com/book/review_counts.json",
                                params={"key": goodreads.key(), "isbns": current_book.isbn})
@@ -234,6 +232,24 @@ def review():
             {"book_id": book_id, "user_id": user_id, "review": review, "rating": rating})
         db.commit()
         return redirect(url_for('book', book_id=book_id), "303")
+
+
+@app.route('/api/isbn/<int:q_isbn>')
+def isbn(q_isbn):
+    q_isbn = f"%{q_isbn}%".lower()
+    res = db.execute("SELECT * FROM books WHERE isbn LIKE :isbn LIMIT 1", {"isbn": q_isbn}).fetchone()
+    b_id, g_id, isbn, isbn13, authors, year, title, rating, r_count, image_url, small_image_url = res
+    book = Book(b_id, g_id, isbn, isbn13, authors, year, title, rating, r_count, image_url, small_image_url)
+    result = {
+        "title": book.title,
+        "author": book.authors,
+        "year": book.year,
+        "isbn": book.isbn,
+        "isbn13": book.isbn13,
+        "review_count": book.ratings_count,
+        "average_score": book.rating
+    }
+    return jsonify(result)
 
 
 if __name__ == '__main__':
