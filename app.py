@@ -10,7 +10,7 @@ import goodreads
 
 app = Flask(__name__)
 
-engine = create_engine("mysql+pymysql://bartix997:zxszxs321@localhost:3306/project1")
+engine = create_engine("mysql+pymysql://login:password@localhost:3306/project1")
 db = scoped_session(sessionmaker(engine))
 
 app.config["SESSION_PERMANENT"] = False
